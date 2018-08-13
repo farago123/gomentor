@@ -1,0 +1,52 @@
+swagger: "2.0"
+
+info:
+  version: 1.0.0
+  title: REST API Server
+  description: A REST API Server with the following 4 endpoints: 1. /nlp  2. /search  3. /hi  4. /
+
+schemes:
+  - http
+host: localhost:8080
+basePath: /
+
+paths:
+  /nlp:
+    get:
+      summary: Computes semantic similarity between sentences from text file and displays result.
+      description: The semantic similarity between the first sentence and each other sentence is computed and displayed on the page. 
+      responses:
+        200:
+          description: A set of JSON responses containing each sentence and its corresponding similarity score to the first sentence
+          schema:
+            type: JSON
+
+  /search:
+    get:
+      summary: Displays lines from text file which contain given word.
+      description: Takes as an argument a word and returns each line from text file which contains the given word in JSON format
+      responses:
+        200:
+          description: A set of JSON responses containing each line which contains the given word
+          schema:
+            type: JSON
+
+  /hi:
+    get:
+      summary: Displays "hi firstname lastname" where firstname and lastname are given as arguments
+      description: Takes as arguments firstname and lastname and displays "hi firstname lastname" in JSON format 
+      responses:
+        200:
+          description: A JSON response containing "hi firstname lastname" where firstname and lastname are given
+          schema:
+            type: JSON
+
+  /:
+    get:
+      summary: Gets full text from text file
+      description: Displays complete contents of text file in a JSON response
+      responses:
+        200:
+          description: Complete contents of text file in a JSON response
+          schema:
+            type: JSON

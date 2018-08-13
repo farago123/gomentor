@@ -5,6 +5,7 @@ import (
   "strings"
   "fmt"
   "encoding/json"
+  "os/exec"
 )
 
 type Message struct {
@@ -13,23 +14,19 @@ type Message struct {
 
 func fullText(w http.ResponseWriter, r *http.Request) {
 
-  if r.URL.Path == "/" {
+    data, err := ioutil.ReadFile("text.txt")
 
-      data, err := ioutil.ReadFile("text.txt")
-
-      if err != nil {
-        fmt.Println(err)
-      }
-      
-      file := string(data)
-      m := Message{file}
-      b, err := json.Marshal(m)
-      if err != nil {
-        fmt.Println(err)
-      }
-      w.Write(b)
-      
-  }
+    if err != nil {
+      fmt.Println(err)
+    }
+    
+    file := string(data)
+    m := Message{file}
+    b, err := json.Marshal(m)
+    if err != nil {
+      fmt.Println(err)
+    }
+    w.Write(b)
 
 }
 
@@ -71,11 +68,59 @@ func search(w http.ResponseWriter, r *http.Request) {
       }
     }
  
+}
+
+func nlp(w http.ResponseWriter, r *http.Request) {
+
+    data, err := ioutil.ReadFile("text.txt")
+
+    if err != nil {
+      fmt.Println(err)
+    }
+    
+    file := string(data)
+    temp := strings.Split(file, ". ")
+    firstSentence := temp[0]
+
+    m := Message{"First Sentence: " + firstSentence}
+    b, err := json.Marshal(m)
+    if err != nil {
+        fmt.Println(err)
+    }
+    w.Write(b)
+    w.Write([]byte("\n"))
+
+    for _, item := range temp[1:] {
+      
+        input1 := strings.Replace(item, "\n", "", -1)
+        input2 := strings.Replace(firstSentence, "\n", "", -1)
+        s1 := strings.Split(computeSemanticSimilarity(input1, input2), "\n")
+        m := Message{item + " - Semantic Similarity to First Sentence: " + s1[6]}
+        b, err := json.Marshal(m)
+        if err != nil {
+            fmt.Println(err)
+        }
+        w.Write([]byte("\n"))
+        w.Write(b)
+
+    }
+
+}
+
+func computeSemanticSimilarity(sentence1 string, sentence2 string) string {
+
+    cmd := exec.Command("python",  "-c", "import SentenceSimilarity; print SentenceSimilarity.getSemanticSimilarity('" + sentence1 + "', '" + sentence2 + "')")
+    out, err := cmd.CombinedOutput()
+
+    if err != nil { fmt.Println(err); }   
+
+    return string(out)
 
 }
 
 func main() {
 
+  http.HandleFunc("/nlp", nlp)
   http.HandleFunc("/search", search)
   http.HandleFunc("/hi", sayHi)
   http.HandleFunc("/", fullText)
