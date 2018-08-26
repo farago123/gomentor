@@ -57,16 +57,19 @@ func search(w http.ResponseWriter, r *http.Request) {
     file := string(data)
     temp := strings.Split(file, "\n")
 
+    matchingLines := []string{}
+
     for _, item := range temp {
       if strings.Contains(item, word) {
-        m := Message{item}
-        b, err := json.Marshal(m)
-        if err != nil {
-            fmt.Println(err)
-        }
-        w.Write(b)
+         matchingLines = append(matchingLines, item)
       }
     }
+
+    b, err := json.Marshal(matchingLines)
+    if err != nil {
+        fmt.Println(err)
+    }
+    w.Write(b)
  
 }
 
