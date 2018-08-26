@@ -25,168 +25,89 @@ func TestFullTextHandler(t *testing.T) {
             status, http.StatusOK)
     }
 
-    expected := `{"Body":"As of 2017, text messages are used by youth and adults for personal, family and social purposes and in\nbusiness. Governmental and non-governmental organizations use text messaging for communication between\ncolleagues. As with emailing, in the 2010s, the sending of short informal messages has become an accepted\npart of many cultures.[1] This makes texting a quick and easy way to communicate with friends and colleagues,\nincluding in contexts where a call would be impolite or inappropriate (e.g., calling very late at night or\nwhen one knows the other person is busy with family or work activities). Like e-mail and voice mail, and\nunlike calls (in which the caller hopes to speak directly with the recipient), texting does not require the\ncaller and recipient to both be free at the same moment; this permits communication even between busy\nindividuals. Text messages can also be used to interact with automated systems, for example, to order\nproducts or services from e-commerce websites, or to participate in online contests. Advertisers and service\nproviders use direct text marketing to send messages to mobile users about promotions, payment due dates,\nand other notifications instead of using postal mail, email, or voicemail."}`
+    expected := `{"Body":"As of 2017, text messages are used by youth and adults for personal, family and social purposes and in\nbusiness. Governmental and non-governmental organizations use text messaging for communication between\ncolleagues. As with emailing, in the 2010s, the sending of short informal messages has become an accepted\npart of many cultures. This makes texting a quick and easy way to communicate with friends and colleagues,\nincluding in contexts where a call would be impolite or inappropriate (e.g., calling very late at night or\nwhen one knows the other person is busy with family or work activities). Like e-mail and voice mail, and\nunlike calls (in which the caller hopes to speak directly with the recipient), texting does not require the\ncaller and recipient to both be free at the same moment; this permits communication even between busy\nindividuals. Text messages can also be used to interact with automated systems, for example, to order\nproducts or services from e-commerce websites, or to participate in online contests. Advertisers and service\nproviders use direct text marketing to send messages to mobile users about promotions, payment due dates,\nand other notifications instead of using postal mail, email, or voicemail."}`
 
     if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
+        t.Errorf("handler returned unexpected body: got \n**%v**\n want \n**%v**\n",
             rr.Body.String(), expected)
     }
 }
 
-func TestSayHiHandler1(t *testing.T) {
+var sayHiTests = []struct {
+    firstname string
+    lastname string
+    want string
+}{
+    {"joe", "ellis", `{"Body":"hi joe ellis"}`},
+    {"peter", "farago", `{"Body":"hi peter farago"}`},
+    {"jared", "scheib", `{"Body":"hi jared scheib"}`},
+    {"joe", "smith", `{"Body":"hi joe smith"}`},
+    {"john", "arnold", `{"Body":"hi john arnold"}`},
+}
+
+func TestSayHiHandler(t *testing.T) {
     
-    req, err := http.NewRequest("GET", "http://localhost:8080/hi?firstname=joe&lastname=ellis", nil)
+    for _, tt := range sayHiTests {
 
-    if err != nil {
-        t.Fatal(err)
-    }
+        req, err := http.NewRequest("GET", "http://localhost:8080/hi?firstname=" + tt.firstname + "&lastname=" + tt.lastname, nil)
 
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(sayHi)
+        if err != nil {
+            t.Fatal(err)
+        }
 
-    handler.ServeHTTP(rr, req)
+        rr := httptest.NewRecorder()
+        handler := http.HandlerFunc(sayHi)
 
-    if status := rr.Code; status != http.StatusOK {
-        t.Errorf("handler returned wrong status code: got %v want %v",
-            status, http.StatusOK)
-    }
+        handler.ServeHTTP(rr, req)
 
-    expected := `{"Body":"hi joe ellis"}`
+        if status := rr.Code; status != http.StatusOK {
+            t.Errorf("handler returned wrong status code: got %v want %v",
+                status, http.StatusOK)
+        }
 
-    if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
-            rr.Body.String(), expected)
+        if rr.Body.String() != want {
+            t.Errorf("handler returned unexpected body: got %v want %v",
+                rr.Body.String(), want)
+        }
+
     }
 }
 
-func TestSayHiHandler2(t *testing.T) {
-    
-    req, err := http.NewRequest("GET", "http://localhost:8080/hi?firstname=peter&lastname=farago", nil)
-
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(sayHi)
-
-    handler.ServeHTTP(rr, req)
-
-    if status := rr.Code; status != http.StatusOK {
-        t.Errorf("handler returned wrong status code: got %v want %v",
-            status, http.StatusOK)
-    }
-
-    expected := `{"Body":"hi peter farago"}`
-
-    if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
-            rr.Body.String(), expected)
-    }
+var searchTests = []struct {
+    searchParam string
+    want string
+}{
+    {"the", `["colleagues. As with emailing, in the 2010s, the sending of short informal messages has become an accepted","when one knows the other person is busy with family or work activities). Like e-mail and voice mail, and","unlike calls (in which the caller hopes to speak directly with the recipient), texting does not require the","caller and recipient to both be free at the same moment; this permits communication even between busy","and other notifications instead of using postal mail, email, or voicemail."]`},
+    {"where", `["including in contexts where a call would be impolite or inappropriate (e.g., calling very late at night or"]`},
+    {"call", `["including in contexts where a call would be impolite or inappropriate (e.g., calling very late at night or","unlike calls (in which the caller hopes to speak directly with the recipient), texting does not require the","caller and recipient to both be free at the same moment; this permits communication even between busy"]`},
 }
 
-func TestSayHiHandler3(t *testing.T) {
+func TestSearchHandler(t *testing.T) {
     
-    req, err := http.NewRequest("GET", "http://localhost:8080/hi?firstname=jared&lastname=scheib", nil)
+    for _, tt := range searchTests {
 
-    if err != nil {
-        t.Fatal(err)
+        req, err := http.NewRequest("GET", "http://localhost:8080/search?" + tt.searchParam, nil)
+
+        if err != nil {
+            t.Fatal(err)
+        }
+
+        rr := httptest.NewRecorder()
+        handler := http.HandlerFunc(search)
+
+        handler.ServeHTTP(rr, req)
+
+        if status := rr.Code; status != http.StatusOK {
+            t.Errorf("handler returned wrong status code: got %v want %v",
+                status, http.StatusOK)
+        }
+
+        if rr.Body.String() != want {
+            t.Errorf("handler returned unexpected body: got %v want %v",
+                rr.Body.String(), want)
+        }
     }
 
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(sayHi)
-
-    handler.ServeHTTP(rr, req)
-
-    if status := rr.Code; status != http.StatusOK {
-        t.Errorf("handler returned wrong status code: got %v want %v",
-            status, http.StatusOK)
-    }
-
-    expected := `{"Body":"hi jared scheib"}`
-
-    if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
-            rr.Body.String(), expected)
-    }
-}
-
-func TestSearchHandler1(t *testing.T) {
-    
-    req, err := http.NewRequest("GET", "http://localhost:8080/search?the", nil)
-
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(search)
-
-    handler.ServeHTTP(rr, req)
-
-    if status := rr.Code; status != http.StatusOK {
-        t.Errorf("handler returned wrong status code: got %v want %v",
-            status, http.StatusOK)
-    }
-
-    expected := `{"Body":"colleagues. As with emailing, in the 2010s, the sending of short informal messages has become an accepted"}{"Body":"when one knows the other person is busy with family or work activities). Like e-mail and voice mail, and"}{"Body":"unlike calls (in which the caller hopes to speak directly with the recipient), texting does not require the"}{"Body":"caller and recipient to both be free at the same moment; this permits communication even between busy"}{"Body":"and other notifications instead of using postal mail, email, or voicemail."}`
-
-    if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
-            rr.Body.String(), expected)
-    }
-}
-
-func TestSearchHandler2(t *testing.T) {
-    
-    req, err := http.NewRequest("GET", "http://localhost:8080/search?where", nil)
-
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(search)
-
-    handler.ServeHTTP(rr, req)
-
-    if status := rr.Code; status != http.StatusOK {
-        t.Errorf("handler returned wrong status code: got %v want %v",
-            status, http.StatusOK)
-    }
-
-    expected := `{"Body":"including in contexts where a call would be impolite or inappropriate (e.g., calling very late at night or"}`
-    
-    if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
-            rr.Body.String(), expected)
-    }
-}
-
-func TestSearchHandler3(t *testing.T) {
-    
-    req, err := http.NewRequest("GET", "http://localhost:8080/search?call", nil)
-
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    rr := httptest.NewRecorder()
-    handler := http.HandlerFunc(search)
-
-    handler.ServeHTTP(rr, req)
-
-    if status := rr.Code; status != http.StatusOK {
-        t.Errorf("handler returned wrong status code: got %v want %v",
-            status, http.StatusOK)
-    }
-
-    expected := `{"Body":"including in contexts where a call would be impolite or inappropriate (e.g., calling very late at night or"}{"Body":"unlike calls (in which the caller hopes to speak directly with the recipient), texting does not require the"}{"Body":"caller and recipient to both be free at the same moment; this permits communication even between busy"}`
-    
-    if rr.Body.String() != expected {
-        t.Errorf("handler returned unexpected body: got %v want %v",
-            rr.Body.String(), expected)
-    }
 }
 
 func IntegrationTestServer(t *testing.T) {
